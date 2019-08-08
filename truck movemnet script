@@ -1,0 +1,91 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.AI;
+
+[RequireComponent(typeof(NavMeshAgent))]
+public class TruckMovement : MonoBehaviour {
+
+	public Transform finishNode;
+	private Vector3 targetTrans;
+	public float minX = 0f;
+	public float maxX = 0f;
+	private float randX = 0f;
+
+	float minSpeed = 25f;
+	float maxSpeed = 40f;
+	public float targetSpeed;
+
+	float minAcceleration = 15f;
+	float maxAcceleration = 20f;
+	float targetAcceleration;
+
+	public bool airborne = false;
+
+	GameObject trailer;
+
+	NavMeshAgent agent;
+
+	void Start () {
+		randX = 0f;
+		targetSpeed = 0f;
+		targetAcceleration = 0f;
+		airborne = false;
+
+
+		randX = Random.Range(minX, maxX);
+		targetTrans = new Vector3(randX, finishNode.position.y, finishNode.position.z);
+
+		targetSpeed = Random.Range(minSpeed, maxSpeed);
+		targetAcceleration = Random.Range(minAcceleration, maxAcceleration);
+
+		agent = GetComponent<NavMeshAgent>();
+		agent.speed = targetSpeed;
+		agent.acceleration = targetAcceleration;
+		agent.SetDestination(targetTrans);
+
+		trailer = transform.Find("Trailer").gameObject;
+	}
+
+	private void Update()
+	{
+		CheckIfAirborne();
+		//Debug.Log(trailer.GetComponent<Rigidbody>().ToString());
+	}
+
+	void CheckIfAirborne()
+	{
+		RaycastHit hit;
+		if (Physics.Raycast(trailer.transform.position, Vector3.down, out hit, 2f))
+		{
+			if (hit.transform.tag == "Ground")
+			{
+				airborne = false;
+				agent.isStopped = false;
+				Debug.Log("not airborne");
+			}
+		}
+		else
+		{
+			airborne = true;
+			agent.isStopped = true;
+			Debug.Log("airborne");
+		}
+
+		if (!airborne)
+		{
+			if (Vector3.Dot(trailer.transform.up, Vector3.down) > 0)
+			{
+				agent.isStopped = true;
+			}
+
+			if (Mathf.Abs(Vector3.Dot(trailer.transform.up, Vector3.down)) < 0.01f)
+			{
+				if (Mathf.Abs(Vector3.Dot(trailer.transform.right, Vector3.down)) > 0.99f)
+				{
+					agent.isStopped = true;
+				}
+			}
+		}
+	}
+}
